@@ -14,9 +14,15 @@ Basically, what is done:
 
 ## How to install
 
+```bash
+go install github.com/esachser/webexcrawler@latest
+```
+
+Or download the executable from releases 
+
 ## How to use
 
-First, get a Webex API Key.
+First, get a Webex API Key [here](https://developer.webex.com/docs/getting-your-personal-access-token).
 
 On the bash/cmd/powershell, create a env variable `WEBEX_APIKEY`.
 
