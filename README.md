@@ -15,7 +15,7 @@ Basically, what is done:
 ## How to install
 
 ```bash
-go install github.com/esachser/webexcrawler@latest
+go install github.com/esachser/webexcrawler/cmd/webexcrawler@latest
 ```
 
 Or download the executable from releases 

@@ -20,16 +20,42 @@ func main() {
 	onlyRooms := false
 	flag.BoolVar(&onlyRooms, "onlyrooms", false, "Only fetch rooms and not messages")
 
+	nofiles := false
+	flag.BoolVar(&nofiles, "nofiles", false, "Do not download files")
+
+	roomfile := ""
+	flag.StringVar(&roomfile, "roomfile", "", "File containing rooms to fetch messages for")
+
+	before := ""
+	flag.StringVar(&before, "before", "", "Fetch messages before this date (YYYY-MM-DDTHH:MM:SSZ)")
+
 	flag.Parse()
 
 	// Initialize the Crawler
 	crawler := webexcrawler.NewCrawler()
 
-	// Get the rooms
-	rooms, err := crawler.GetRooms(maxRooms)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
+	rooms := []webexcrawler.Room{}
+	var err error
+
+	if roomfile != "" {
+		// Read the room IDs from the file
+		bts, err := os.ReadFile(roomfile)
+		if err != nil {
+			fmt.Println("Error reading room file:", err)
+			return
+		}
+		err = json.Unmarshal(bts, &rooms)
+		if err != nil {
+			fmt.Println("Error unmarshalling room file:", err)
+			return
+		}
+	} else {
+		// Get the rooms
+		rooms, err = crawler.GetRooms(maxRooms)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
 	}
 
 	// Print the rooms
@@ -73,7 +99,7 @@ func main() {
 			return
 		}
 
-		messages, err := crawler.GetMessages(room.ID, 100, "")
+		messages, err := crawler.GetMessages(room.ID, 100, "", before)
 		if err != nil {
 			fmt.Println("Error fetching messages for room:", room.ID, err)
 			continue
@@ -101,7 +127,7 @@ func main() {
 					fmt.Fprintf(file, "    ")
 				}
 				isFirst = false
-				if len(message.Files) > 0 {
+				if !nofiles && len(message.Files) > 0 {
 					// Gets the files to the disk
 					for i, file := range message.Files {
 						fname, bts, err := crawler.GetFile(file)
@@ -133,7 +159,7 @@ func main() {
 			// Get the next page of messages
 			lastMessageID := messages[len(messages)-1].ID
 
-			messages, err = crawler.GetMessages(room.ID, 100, lastMessageID)
+			messages, err = crawler.GetMessages(room.ID, 100, lastMessageID, before)
 			if err != nil {
 				fmt.Println("Error fetching messages for room:", room.ID, err)
 				continue

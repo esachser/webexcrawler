@@ -80,6 +80,7 @@ func (c *Crawler) GetRooms(maxRooms int) ([]Room, error) {
 				retryAfterInt, err := strconv.Atoi(retryAfter)
 				if err == nil {
 					// return nil, &ErrorRetryAfter{RetryAfter: retryAfterInt}
+					fmt.Printf("Rate limit exceeded, retrying after %d seconds\n", retryAfterInt)
 					time.Sleep(time.Duration(retryAfterInt) * time.Second)
 					return c.GetRooms(maxRooms)
 				}
@@ -99,11 +100,14 @@ func (c *Crawler) GetRooms(maxRooms int) ([]Room, error) {
 }
 
 // GetMessages retrieves messages from a specific room.
-func (c *Crawler) GetMessages(roomID string, maxMessages int, beforeMessageId string) ([]Message, error) {
+func (c *Crawler) GetMessages(roomID string, maxMessages int, beforeMessageId string, before string) ([]Message, error) {
 	// Create a new request
 	apiurl := fmt.Sprintf("%s/v1/messages?roomId=%s&max=%d", c.baseUrl, roomID, maxMessages)
 	if beforeMessageId != "" {
 		apiurl += "&beforeMessage=" + beforeMessageId
+	}
+	if before != "" {
+		apiurl += "&before=" + before
 	}
 	req, err := http.NewRequest("GET", apiurl, nil)
 	if err != nil {
@@ -128,8 +132,9 @@ func (c *Crawler) GetMessages(roomID string, maxMessages int, beforeMessageId st
 				retryAfterInt, err := strconv.Atoi(retryAfter)
 				if err == nil {
 					// return nil, &ErrorRetryAfter{RetryAfter: retryAfterInt}
+					fmt.Printf("Rate limit exceeded, retrying after %d seconds\n", retryAfterInt)
 					time.Sleep(time.Duration(retryAfterInt) * time.Second)
-					return c.GetMessages(roomID, maxMessages, beforeMessageId)
+					return c.GetMessages(roomID, maxMessages, beforeMessageId, before)
 				}
 			}
 			return nil, fmt.Errorf("rate limit exceeded")
@@ -211,6 +216,7 @@ func (c *Crawler) GetFile(fileUrl string) (string, []byte, error) {
 				retryAfterInt, err := strconv.Atoi(retryAfter)
 				if err == nil {
 					// return nil, &ErrorRetryAfter{RetryAfter: retryAfterInt}
+					fmt.Printf("Rate limit exceeded, retrying after %d seconds\n", retryAfterInt)
 					time.Sleep(time.Duration(retryAfterInt) * time.Second)
 					return c.GetFile(fileUrl)
 				}
