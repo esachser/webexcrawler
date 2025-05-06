@@ -17,6 +17,9 @@ func main() {
 	output := ""
 	flag.StringVar(&output, "output", "./webexmessages", "Output directory to save the rooms")
 
+	onlyRooms := false
+	flag.BoolVar(&onlyRooms, "onlyrooms", false, "Only fetch rooms and not messages")
+
 	flag.Parse()
 
 	// Initialize the Crawler
@@ -57,6 +60,11 @@ func main() {
 	}
 	fmt.Printf("Rooms saved to %s\n", roomsPath)
 	file.Close()
+
+	if onlyRooms {
+		fmt.Println("Only rooms were requested, exiting.")
+		return
+	}
 
 	for _, room := range rooms {
 		err = os.MkdirAll(fmt.Sprintf("%s/%s-%s/content", output, room.Title, room.ID), os.ModePerm)
@@ -136,5 +144,4 @@ func main() {
 		file.Close()
 		fmt.Printf("Messages for room %s saved to %s\n", room.ID, messagesPath)
 	}
-	// Save the rooms to a file
 }

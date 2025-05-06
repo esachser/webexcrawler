@@ -12,3 +12,38 @@ Basically, what is done:
   - Gets the messages of the room and saves as JSON
   - Gets the file attachments and saves to a folder called content
 
+## How to install
+
+## How to use
+
+First, get a Webex API Key.
+
+On the bash/cmd/powershell, create a env variable `WEBEX_APIKEY`.
+
+On bash:
+```bash
+export WEBEX_APIKEY=<THE_APIKEY_YOU_GOT>
+```
+
+On Powershell
+```powershell
+$env:WEBEX_APIKEY="<THE_APIKEY_YOU_GOT>"
+```
+
+To show usage of the app:
+
+```bash
+webexcrawler -h
+```
+
+If you want first to "understand" the best value of rooms.
+
+```bash
+webexcrawler -onlyrooms -rooms <N>
+```
+
+Finally, to store the messages in a selected folder:
+
+```bash
+webexcrawler -output ./myselectedwebexfolder
+```
