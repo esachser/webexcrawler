@@ -246,7 +246,6 @@ func (c *Crawler) GetFile(fileUrl string) (string, []byte, error) {
 		// Fallback to the last part of the URL
 		parts := strings.Split(fileUrl, "/")
 		filename = parts[len(parts)-1]
-		fmt.Printf("Headers: %v\n", resp.Header)
 		if strings.HasSuffix(resp.Header.Get("Content-Type"), "/gif") {
 			filename += ".gif"
 		}
