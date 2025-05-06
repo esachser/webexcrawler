@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -239,6 +240,15 @@ func (c *Crawler) GetFile(fileUrl string) (string, []byte, error) {
 			if name, ok := params["filename"]; ok {
 				filename = name
 			}
+		}
+	}
+	if filename == "" {
+		// Fallback to the last part of the URL
+		parts := strings.Split(fileUrl, "/")
+		filename = parts[len(parts)-1]
+		fmt.Printf("Headers: %v\n", resp.Header)
+		if strings.HasSuffix(resp.Header.Get("Content-Type"), "/gif") {
+			filename += ".gif"
 		}
 	}
 	return filename, bts, nil

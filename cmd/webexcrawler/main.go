@@ -135,6 +135,7 @@ func main() {
 							fmt.Println("Error downloading file:", err)
 							continue
 						}
+						fmt.Printf("File: %s, Size: %d\n", fname, len(bts))
 						err = os.WriteFile(fmt.Sprintf("%s/%s-%s/content/%s", output, room.Title, room.ID, fname), bts, 0644)
 						if err != nil {
 							fmt.Println("Error writing file to disk:", err)
