@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"os"
 	"strconv"
@@ -187,11 +188,11 @@ type Attachment struct {
 }
 
 // Get file given the file url
-func (c *Crawler) GetFile(fileUrl string) ([]byte, error) {
+func (c *Crawler) GetFile(fileUrl string) (string, []byte, error) {
 	// Create a new request
 	req, err := http.NewRequest("GET", fileUrl, nil)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
 	// Set the authorization header
@@ -199,7 +200,7 @@ func (c *Crawler) GetFile(fileUrl string) ([]byte, error) {
 	// Send the request
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
@@ -214,14 +215,25 @@ func (c *Crawler) GetFile(fileUrl string) ([]byte, error) {
 					return c.GetFile(fileUrl)
 				}
 			}
-			return nil, fmt.Errorf("rate limit exceeded")
+			return "", nil, fmt.Errorf("rate limit exceeded")
 		}
-		return nil, fmt.Errorf("failed to get file: %s", resp.Status)
+		return "", nil, fmt.Errorf("failed to get file: %s", resp.Status)
 	}
 	// Read the response body
 	bts, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
-	return bts, nil
+	cd := resp.Header.Get("Content-Disposition")
+	// Parse the filename from the Content-Disposition header
+	var filename string
+	if cd != "" {
+		_, params, err := mime.ParseMediaType(cd)
+		if err == nil {
+			if name, ok := params["filename"]; ok {
+				filename = name
+			}
+		}
+	}
+	return filename, bts, nil
 }
