@@ -59,7 +59,7 @@ func main() {
 	file.Close()
 
 	for _, room := range rooms {
-		err := os.Mkdir(fmt.Sprintf("%s/%s-%s", output, room.Title, room.ID), os.ModePerm)
+		err = os.MkdirAll(fmt.Sprintf("%s/%s-%s/content", output, room.Title, room.ID), os.ModePerm)
 		if err != nil && !os.IsExist(err) {
 			fmt.Println("Error creating room directory:", err)
 			return
@@ -93,6 +93,23 @@ func main() {
 					fmt.Fprintf(file, "    ")
 				}
 				isFirst = false
+				if len(message.Files) > 0 {
+					// Gets the files to the disk
+					for i, file := range message.Files {
+						fname, bts, err := crawler.GetFile(file)
+						if err != nil {
+							fmt.Println("Error downloading file:", err)
+							continue
+						}
+						err = os.WriteFile(fmt.Sprintf("%s/%s-%s/content/%s", output, room.Title, room.ID, fname), bts, 0644)
+						if err != nil {
+							fmt.Println("Error writing file to disk:", err)
+							continue
+						}
+						message.Files[i] = fmt.Sprintf("./content/%s", fname)
+					}
+				}
+
 				err = encoder.Encode(message)
 				if err != nil {
 					fmt.Println("Error writing message to file:", err)
