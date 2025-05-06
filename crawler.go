@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 )
 
 // Room represents a Webex room.
@@ -77,7 +78,9 @@ func (c *Crawler) GetRooms(maxRooms int) ([]Room, error) {
 			if retryAfter != "" {
 				retryAfterInt, err := strconv.Atoi(retryAfter)
 				if err == nil {
-					return nil, &ErrorRetryAfter{RetryAfter: retryAfterInt}
+					// return nil, &ErrorRetryAfter{RetryAfter: retryAfterInt}
+					time.Sleep(time.Duration(retryAfterInt) * time.Second)
+					return c.GetRooms(maxRooms)
 				}
 			}
 			return nil, fmt.Errorf("rate limit exceeded")
@@ -99,7 +102,7 @@ func (c *Crawler) GetMessages(roomID string, maxMessages int, beforeMessageId st
 	// Create a new request
 	apiurl := fmt.Sprintf("%s/v1/messages?roomId=%s&max=%d", c.baseUrl, roomID, maxMessages)
 	if beforeMessageId != "" {
-		apiurl += "&beforeMessageId=" + beforeMessageId
+		apiurl += "&beforeMessage=" + beforeMessageId
 	}
 	req, err := http.NewRequest("GET", apiurl, nil)
 	if err != nil {
@@ -123,7 +126,9 @@ func (c *Crawler) GetMessages(roomID string, maxMessages int, beforeMessageId st
 			if retryAfter != "" {
 				retryAfterInt, err := strconv.Atoi(retryAfter)
 				if err == nil {
-					return nil, &ErrorRetryAfter{RetryAfter: retryAfterInt}
+					// return nil, &ErrorRetryAfter{RetryAfter: retryAfterInt}
+					time.Sleep(time.Duration(retryAfterInt) * time.Second)
+					return c.GetMessages(roomID, maxMessages, beforeMessageId)
 				}
 			}
 			return nil, fmt.Errorf("rate limit exceeded")
@@ -204,7 +209,9 @@ func (c *Crawler) GetFile(fileUrl string) ([]byte, error) {
 			if retryAfter != "" {
 				retryAfterInt, err := strconv.Atoi(retryAfter)
 				if err == nil {
-					return nil, &ErrorRetryAfter{RetryAfter: retryAfterInt}
+					// return nil, &ErrorRetryAfter{RetryAfter: retryAfterInt}
+					time.Sleep(time.Duration(retryAfterInt) * time.Second)
+					return c.GetFile(fileUrl)
 				}
 			}
 			return nil, fmt.Errorf("rate limit exceeded")
