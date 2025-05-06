@@ -26,3 +26,20 @@ jobs:
 
     - name: Test
       run: go test -v ./...
+
+    - name: Gen cmd linux
+      run: go build -o ./cmd/webexcrawler/webexcrawler-$GOOS-$GOARCH ./cmd/webexcrawler
+      env:
+        GOOS: linux
+        GOARCH: amd64
+    - name: Gen cmd windows
+      run: go build -o ./cmd/webexcrawler/webexcrawler-$GOOS-$GOARCH.exe ./cmd/webexcrawler
+      env:
+        GOOS: windows
+        GOARCH: amd64
+
+    - name: Gen cmd macos
+      run: go build -o ./cmd/webexcrawler/webexcrawler-$GOOS-$GOARCH.exe ./cmd/webexcrawler
+      env:
+        GOOS: darwin
+        GOARCH: amd64
