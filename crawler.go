@@ -1,6 +1,7 @@
 package webexcrawler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -47,7 +48,6 @@ type Crawler struct {
 
 func NewCrawler() *Crawler {
 	apikey := os.Getenv("WEBEX_APIKEY")
-	http.DefaultClient.Timeout = 60 * time.Second
 
 	return &Crawler{
 		ApiKey:  apikey,
@@ -59,7 +59,9 @@ func NewCrawler() *Crawler {
 func (c *Crawler) GetRooms(maxRooms int) ([]Room, error) {
 	// Create a new request
 	apiurl := fmt.Sprintf("%s/v1/rooms?max=%d&sortBy=lastactivity", c.baseUrl, maxRooms)
-	req, err := http.NewRequest("GET", apiurl, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, "GET", apiurl, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +113,9 @@ func (c *Crawler) GetMessages(roomID string, maxMessages int, beforeMessageId st
 	if before != "" {
 		apiurl += "&before=" + before
 	}
-	req, err := http.NewRequest("GET", apiurl, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, "GET", apiurl, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +201,9 @@ type Attachment struct {
 // Get file given the file url
 func (c *Crawler) GetFile(fileUrl string) (string, []byte, error) {
 	// Create a new request
-	req, err := http.NewRequest("GET", fileUrl, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, "GET", fileUrl, nil)
 	if err != nil {
 		return "", nil, err
 	}
