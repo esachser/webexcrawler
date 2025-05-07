@@ -5,9 +5,13 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"regexp"
+	"time"
 
 	"github.com/esachser/webexcrawler"
 )
+
+var regexFname = regexp.MustCompile("[/\\?%*:|\"<>]")
 
 func main() {
 
@@ -26,8 +30,8 @@ func main() {
 	roomfile := ""
 	flag.StringVar(&roomfile, "roomfile", "", "File containing rooms to fetch messages for")
 
-	before := ""
-	flag.StringVar(&before, "before", "", "Fetch messages before this date (YYYY-MM-DDTHH:MM:SSZ)")
+	after := ""
+	flag.StringVar(&after, "after", "", "Fetch messages after this date (YYYY-MM-DDTHH:MM:SSZ)")
 
 	flag.Parse()
 
@@ -92,14 +96,33 @@ func main() {
 		return
 	}
 
+	afterTm := time.Now().Add(10 * 365 * 24 * time.Hour)
+	if after != "" {
+		afterTm, err = time.Parse(time.RFC3339, after)
+		if err != nil {
+			fmt.Println("Error parsing after date:", err)
+			return
+		}
+	}
+
 	for _, room := range rooms {
-		err = os.MkdirAll(fmt.Sprintf("%s/%s-%s/content", output, room.Title, room.ID), os.ModePerm)
+		lastActivity, err := time.Parse(time.RFC3339, room.LastActivity)
+		if lastActivity.Before(afterTm) && err == nil {
+			fmt.Printf("Room %s has no activity after %s, skipping all others.\n", room.Title, after)
+			break
+		}
+
+		room.Title = regexFname.ReplaceAllString(room.Title, "-")
+		roomDir := fmt.Sprintf("%s/%s-%s/content", output, room.Title, room.ID)
+		err = os.MkdirAll(roomDir, os.ModePerm)
 		if err != nil && !os.IsExist(err) {
 			fmt.Println("Error creating room directory:", err)
 			return
 		}
 
-		messages, err := crawler.GetMessages(room.ID, 100, "", before)
+		fmt.Printf("Room directory created: %s\n", roomDir)
+
+		messages, err := crawler.GetMessages(room.ID, 100, "", "")
 		if err != nil {
 			fmt.Println("Error fetching messages for room:", room.ID, err)
 			continue
@@ -119,8 +142,31 @@ func main() {
 
 		encoder = json.NewEncoder(file)
 		encoder.SetIndent("    ", "  ")
+	messages:
 		for len(messages) > 0 {
 			for _, message := range messages {
+				tm2parse := message.Created
+				if message.Updated != "" {
+					tm2parse = message.Updated
+				}
+				if tm2parse == "" {
+					fmt.Println("Message has no created or updated time:", message)
+					continue
+				}
+
+				// Parse the message time
+				tm, err := time.Parse(time.RFC3339, tm2parse)
+				if err != nil {
+					fmt.Println("Error parsing message time:", err)
+					continue
+				}
+				// Check if the message is after the specified time
+				if after != "" {
+					if tm.Before(afterTm) {
+						break messages
+					}
+				}
+
 				if !isFirst {
 					fmt.Fprintf(file, "    ,")
 				} else {
@@ -160,7 +206,7 @@ func main() {
 			// Get the next page of messages
 			lastMessageID := messages[len(messages)-1].ID
 
-			messages, err = crawler.GetMessages(room.ID, 100, lastMessageID, before)
+			messages, err = crawler.GetMessages(room.ID, 100, lastMessageID, "")
 			if err != nil {
 				fmt.Println("Error fetching messages for room:", room.ID, err)
 				continue

@@ -47,6 +47,7 @@ type Crawler struct {
 
 func NewCrawler() *Crawler {
 	apikey := os.Getenv("WEBEX_APIKEY")
+	http.DefaultClient.Timeout = 60 * time.Second
 
 	return &Crawler{
 		ApiKey:  apikey,
