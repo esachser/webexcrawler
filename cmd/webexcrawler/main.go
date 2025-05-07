@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"time"
@@ -45,38 +46,39 @@ func main() {
 		// Read the room IDs from the file
 		bts, err := os.ReadFile(roomfile)
 		if err != nil {
-			fmt.Println("Error reading room file:", err)
+			log.Println("Error reading room file:", err)
 			return
 		}
 		err = json.Unmarshal(bts, &rooms)
 		if err != nil {
-			fmt.Println("Error unmarshalling room file:", err)
+			log.Println("Error unmarshalling room file:", err)
 			return
 		}
 	} else {
 		// Get the rooms
+		log.Println("Fetching rooms...")
 		rooms, err = crawler.GetRooms(maxRooms)
 		if err != nil {
-			fmt.Println("Error:", err)
+			log.Println("Error:", err)
 			return
 		}
 	}
 
 	// Print the rooms
 	for _, room := range rooms {
-		fmt.Printf("Room ID: %s, Title: %s, Last Activity: %s\n", room.ID, room.Title, room.LastActivity)
+		log.Printf("Room ID: %s, Title: %s, Last Activity: %s\n", room.ID, room.Title, room.LastActivity)
 	}
 
 	err = os.MkdirAll(output, os.ModePerm)
 	if err != nil && !os.IsExist(err) {
-		fmt.Println("Error creating output directory:", err)
+		log.Println("Error creating output directory:", err)
 		return
 	}
 
 	roomsPath := fmt.Sprintf("%s/rooms.json", output)
 	file, err := os.Create(roomsPath)
 	if err != nil {
-		fmt.Println("Error creating rooms file:", err)
+		log.Println("Error creating rooms file:", err)
 		return
 	}
 
@@ -84,23 +86,23 @@ func main() {
 	encoder.SetIndent("", "  ")
 	err = encoder.Encode(rooms)
 	if err != nil {
-		fmt.Println("Error writing rooms to file:", err)
+		log.Println("Error writing rooms to file:", err)
 		file.Close()
 		return
 	}
-	fmt.Printf("Rooms saved to %s\n", roomsPath)
+	log.Printf("Rooms saved to %s\n", roomsPath)
 	file.Close()
 
 	if onlyRooms {
-		fmt.Println("Only rooms were requested, exiting.")
+		log.Println("Only rooms were requested, exiting.")
 		return
 	}
 
-	afterTm := time.Now().Add(10 * 365 * 24 * time.Hour)
+	afterTm := time.Now().Add(-10 * 365 * 24 * time.Hour)
 	if after != "" {
 		afterTm, err = time.Parse(time.RFC3339, after)
 		if err != nil {
-			fmt.Println("Error parsing after date:", err)
+			log.Println("Error parsing after date:", err)
 			return
 		}
 	}
@@ -108,7 +110,7 @@ func main() {
 	for _, room := range rooms {
 		lastActivity, err := time.Parse(time.RFC3339, room.LastActivity)
 		if lastActivity.Before(afterTm) && err == nil {
-			fmt.Printf("Room %s has no activity after %s, skipping all others.\n", room.Title, after)
+			log.Printf("Room %s has no activity after %s, skipping all others.\n", room.Title, after)
 			break
 		}
 
@@ -116,22 +118,22 @@ func main() {
 		roomDir := fmt.Sprintf("%s/%s-%s/content", output, room.Title, room.ID)
 		err = os.MkdirAll(roomDir, os.ModePerm)
 		if err != nil && !os.IsExist(err) {
-			fmt.Println("Error creating room directory:", err)
+			log.Println("Error creating room directory:", err)
 			return
 		}
 
-		fmt.Printf("Room directory created: %s\n", roomDir)
-
+		log.Printf("Room directory created: %s\n", roomDir)
+		log.Println("Fetching messages for room:", room.Title)
 		messages, err := crawler.GetMessages(room.ID, 100, "", "")
 		if err != nil {
-			fmt.Println("Error fetching messages for room:", room.ID, err)
+			log.Println("Error fetching messages for room:", room.ID, err)
 			continue
 		}
 
 		messagesPath := fmt.Sprintf("%s/%s-%s/messages.json", output, room.Title, room.ID)
 		file, err = os.Create(messagesPath)
 		if err != nil {
-			fmt.Println("Error creating messages file:", err)
+			log.Println("Error creating messages file:", err)
 			return
 		}
 
@@ -150,14 +152,14 @@ func main() {
 					tm2parse = message.Updated
 				}
 				if tm2parse == "" {
-					fmt.Println("Message has no created or updated time:", message)
+					log.Println("Message has no created or updated time:", message)
 					continue
 				}
 
 				// Parse the message time
 				tm, err := time.Parse(time.RFC3339, tm2parse)
 				if err != nil {
-					fmt.Println("Error parsing message time:", err)
+					log.Println("Error parsing message time:", err)
 					continue
 				}
 				// Check if the message is after the specified time
@@ -176,15 +178,16 @@ func main() {
 				if !nofiles && len(message.Files) > 0 {
 					// Gets the files to the disk
 					for i, file := range message.Files {
+						log.Println("Downloading file:", file)
 						fname, bts, err := crawler.GetFile(file)
 						if err != nil {
-							fmt.Println("Error downloading file:", err)
+							log.Println("Error downloading file:", file, err)
 							continue
 						}
-						fmt.Printf("File: %s, Size: %d\n", fname, len(bts))
+						log.Printf("File: %s, Size: %d\n", fname, len(bts))
 						err = os.WriteFile(fmt.Sprintf("%s/%s-%s/content/%s", output, room.Title, room.ID, fname), bts, 0644)
 						if err != nil {
-							fmt.Println("Error writing file to disk:", err)
+							log.Println("Error writing file to disk:", fname, err)
 							continue
 						}
 						message.Files[i] = fmt.Sprintf("./content/%s", fname)
@@ -193,7 +196,7 @@ func main() {
 
 				err = encoder.Encode(message)
 				if err != nil {
-					fmt.Println("Error writing message to file:", err)
+					log.Println("Error writing message to file:", err)
 					file.Close()
 					return
 				}
@@ -206,15 +209,16 @@ func main() {
 			// Get the next page of messages
 			lastMessageID := messages[len(messages)-1].ID
 
+			log.Println("Fetching more 100 messages for room:", room.Title)
 			messages, err = crawler.GetMessages(room.ID, 100, lastMessageID, "")
 			if err != nil {
-				fmt.Println("Error fetching messages for room:", room.ID, err)
+				log.Println("Error fetching messages for room:", room.ID, err)
 				continue
 			}
 		}
 		fmt.Fprintf(file, "  ]\n")
 		fmt.Fprintf(file, "}\n")
 		file.Close()
-		fmt.Printf("Messages for room %s saved to %s\n", room.ID, messagesPath)
+		log.Printf("Messages for room [%s] saved to [%s]\n", room.Title, messagesPath)
 	}
 }

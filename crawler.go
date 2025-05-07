@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"mime"
 	"net/http"
 	"os"
@@ -84,7 +85,7 @@ func (c *Crawler) GetRooms(maxRooms int) ([]Room, error) {
 				retryAfterInt, err := strconv.Atoi(retryAfter)
 				if err == nil {
 					// return nil, &ErrorRetryAfter{RetryAfter: retryAfterInt}
-					fmt.Printf("Rate limit exceeded, retrying after %d seconds\n", retryAfterInt)
+					log.Printf("Rate limit exceeded, retrying after %d seconds\n", retryAfterInt)
 					time.Sleep(time.Duration(retryAfterInt) * time.Second)
 					return c.GetRooms(maxRooms)
 				}
@@ -138,7 +139,7 @@ func (c *Crawler) GetMessages(roomID string, maxMessages int, beforeMessageId st
 				retryAfterInt, err := strconv.Atoi(retryAfter)
 				if err == nil {
 					// return nil, &ErrorRetryAfter{RetryAfter: retryAfterInt}
-					fmt.Printf("Rate limit exceeded, retrying after %d seconds\n", retryAfterInt)
+					log.Printf("Rate limit exceeded, retrying after %d seconds\n", retryAfterInt)
 					time.Sleep(time.Duration(retryAfterInt) * time.Second)
 					return c.GetMessages(roomID, maxMessages, beforeMessageId, before)
 				}
@@ -224,7 +225,7 @@ func (c *Crawler) GetFile(fileUrl string) (string, []byte, error) {
 				retryAfterInt, err := strconv.Atoi(retryAfter)
 				if err == nil {
 					// return nil, &ErrorRetryAfter{RetryAfter: retryAfterInt}
-					fmt.Printf("Rate limit exceeded, retrying after %d seconds\n", retryAfterInt)
+					log.Printf("Rate limit exceeded, retrying after %d seconds\n", retryAfterInt)
 					time.Sleep(time.Duration(retryAfterInt) * time.Second)
 					return c.GetFile(fileUrl)
 				}
