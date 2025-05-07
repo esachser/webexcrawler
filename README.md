@@ -53,3 +53,20 @@ Finally, to store the messages in a selected folder:
 ```bash
 webexcrawler -output ./myselectedwebexfolder
 ```
+
+```
+Usage of webexcrawler:
+  -after string
+        Fetch messages after this date (YYYY-MM-DDTHH:MM:SSZ)
+  -nofiles
+        Do not download files
+  -onlyrooms
+        Only fetch rooms and not messages
+  -output string
+        Output directory to save the rooms (default "./webexmessages")
+  -roomfile string
+        File containing rooms to fetch messages for
+  -rooms int
+        Maximum number of rooms to fetch (default 100)
+```
+
